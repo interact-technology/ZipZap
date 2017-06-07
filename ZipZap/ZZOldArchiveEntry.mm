@@ -250,9 +250,21 @@
 
 - (NSString*)fileNameWithEncoding:(NSStringEncoding)encoding
 {
-	return [[NSString alloc] initWithBytes:_centralFileHeader->fileName()
-									length:_centralFileHeader->fileNameLength
-								  encoding:encoding];
+    NSString* uft8String = nil;
+    
+    // try our best to assume filename encoding is utf8 (irrespective of possibly incorrectly configured encoding setting or flags in zip)
+    // if it fails, then try just interpreting the string as whatever the default encoding is... This fixes certain zip's not correctly decoding utf8 filenames.
+    uft8String = [[NSString alloc] initWithBytes:_centralFileHeader->fileName()
+                                          length:_centralFileHeader->fileNameLength
+                                        encoding:NSUTF8StringEncoding];
+    
+    if (uft8String == nil) {
+        uft8String = [[NSString alloc] initWithBytes:_centralFileHeader->fileName()
+                                              length:_centralFileHeader->fileNameLength
+                                            encoding:encoding];
+    }
+    
+    return uft8String;
 }
 
 - (BOOL)checkEncryptionAndCompression:(out NSError**)error
